@@ -9,7 +9,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "openmpi"
-version = "5.0.6"
+version = "{PACKAGE_VERSION}"
 description = "An open source Message Passing Interface implementation."
 maintainers = [ { name = "Open-CE" } ]
 classifiers = [
@@ -20,7 +20,7 @@ classifiers = [
 
 [project.urls]
 homepage = "https://www.open-mpi.org/"
-upstream = "https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-5.0.6.tar.gz"
+upstream = "https://download.open-mpi.org/release/open-mpi/v5.0/openmpi-{PACKAGE_VERSION}.tar.gz"
 
 # Find packages under local/ — maps local/openmpi/ → openmpi package in wheel
 [tool.setuptools.packages.find]
