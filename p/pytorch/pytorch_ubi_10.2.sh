@@ -273,6 +273,43 @@ if [ "$build_type" == "cuda" ]; then
   echo "CUDA_HOME set to: ${CUDA_HOME}"
   echo "nvcc location: ${CUDA_HOME}/bin/nvcc"
   ${CUDA_HOME}/bin/nvcc --version
+
+  echo " --------------------------------- cuDNN Setting Up --------------------------------- "
+  python3.14 -m pip install --no-cache-dir nvidia-cudnn-cu13
+
+  SP=$(python3.14 -c "import sysconfig; print(sysconfig.get_paths()['purelib'])")
+
+  # Locate header and library inside the pip package (layout differs between wheel versions)
+  CUDNN_HEADER=$(find "${SP}/nvidia" -name cudnn.h 2>/dev/null | head -1)
+  CUDNN_SO=$(find "${SP}/nvidia" -name 'libcudnn.so.9*' 2>/dev/null | head -1)
+
+  if [ -z "${CUDNN_HEADER}" ] || [ -z "${CUDNN_SO}" ]; then
+      echo "ERROR: cuDNN header or library not found under ${SP}/nvidia"
+      echo "       (partial install? check free disk space and reinstall nvidia-cudnn-cu13)"
+      find "${SP}/nvidia" -maxdepth 3 2>/dev/null | head -50 || true
+      exit 1
+  fi
+
+  export CUDNN_INCLUDE_DIR=$(dirname "${CUDNN_HEADER}")
+  export CUDNN_LIB_DIR=$(dirname "${CUDNN_SO}")
+  export CUDNN_ROOT=$(dirname "${CUDNN_LIB_DIR}")
+
+  # The pip wheel ships only libcudnn.so.9; CMake looks for the unversioned name
+  if [ ! -e "${CUDNN_LIB_DIR}/libcudnn.so" ]; then
+      ln -s "$(basename "${CUDNN_SO}")" "${CUDNN_LIB_DIR}/libcudnn.so"
+  fi
+
+  export CUDNN_LIBRARY=${CUDNN_LIB_DIR}/libcudnn.so
+  export CUDNN_INCLUDE_PATH=${CUDNN_INCLUDE_DIR}
+  export CUDNN_LIBRARY_PATH=${CUDNN_LIB_DIR}
+  export LD_LIBRARY_PATH=${CUDNN_LIB_DIR}:${LD_LIBRARY_PATH}
+  export CXXFLAGS="${CXXFLAGS} -I${CUDNN_INCLUDE_DIR}"
+  export LDFLAGS="${LDFLAGS} -L${CUDNN_LIB_DIR}"
+
+  echo "cuDNN header : ${CUDNN_HEADER}"
+  echo "cuDNN library: ${CUDNN_SO}"
+  echo " --------------------------------- cuDNN Ready --------------------------------- "
+
   
   export USE_CUDA=1
   export USE_CUDNN=1
